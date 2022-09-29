@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:geocodingand-search-api="http://www.mulesoft.org/schema/mule/geocodingand-search-api" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:geocodingand-search-api="http://www.mulesoft.org/schema/mule/geocodingand-search-api" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
 http://www.mulesoft.org/schema/mule/geocodingand-search-api http://www.mulesoft.org/schema/mule/geocodingand-search-api/current/mule-geocodingand-search-api.xsd
-http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
     <http:listener-config name="weather-api-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
@@ -156,7 +157,8 @@ attributes.queryParams.state]]></ee:set-variable>
         </ee:transform>
         <choice doc:name="Choice" doc:id="9f8b6b76-ba96-4446-bdb2-cf0f9240c6e5">
             <when expression="#[attributes.queryParams.ip != null]">
-                <http:request method="GET" doc:name="ipxapi Request" doc:id="a0155f2e-568a-4e20-9fcd-d4d32046a857" config-ref="HTTP_Request_configuration" path="#[p('ipx_path') ++ vars.ip]">
+                <validation:is-ip doc:name="Is IP" doc:id="88678ef5-9565-4f67-be57-c20e9a10c1ff" ip="#[vars.ip]" message='#[vars.ip ++":   Not Valid Ip Address."]'/>
+				<http:request method="GET" doc:name="ipxapi Request" doc:id="a0155f2e-568a-4e20-9fcd-d4d32046a857" config-ref="HTTP_Request_configuration" path="#[p('ipx_path') ++ vars.ip]">
                     <http:headers><![CDATA[#[output application/json
 ---
 {
@@ -201,7 +203,8 @@ payload.zip]]></ee:set-variable>
                 </ee:transform>
             </when>
             <when expression="#[attributes.queryParams.zipCode != null]">
-                <http:request method="GET" doc:name="Request" doc:id="8770cca1-b830-4f79-ac70-5dc63eab6a1a" config-ref="HTTP_Request_configuration2" path="#[p('zipcodepath')++ p('zipcodekey')++'/info.json/'++(vars.zipCode)++'/radians']"/>
+                <validation:matches-regex doc:name="Matches regex" doc:id="9b8d2b7a-3cde-42ac-a2b8-c77558958f0a" value="#[vars.zipCode]" regex="^(?!0{3})[0-9]{3,5}$"/>
+				<http:request method="GET" doc:name="Request" doc:id="8770cca1-b830-4f79-ac70-5dc63eab6a1a" config-ref="HTTP_Request_configuration2" path="#[p('zipcodepath')++ p('zipcodekey')++'/info.json/'++(vars.zipCode)++'/radians']"/>
 				<ee:transform doc:name="Copy_of_Transform Message" doc:id="52032fa9-3723-4b84-87da-baa63c3b64a5">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.4
@@ -307,6 +310,20 @@ output application/json
             </otherwise>
         </choice>
 		<error-handler >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a013b0e8-a995-45f4-925d-ac3b90ca9abc" type="VALIDATION:MISMATCH">
+				<logger level="INFO" doc:name="Logger" doc:id="0041fd05-163a-4077-936d-2604c9a3237b" />
+				<ee:transform doc:name="Transform Message" doc:id="b844abcc-ab50-4fe8-984a-bcef041922f2" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.4
+output application/json
+---
+{
+	error:error.errorType.asString default "",
+	description:vars.zipCode ++ ':   is not a valid ZipCode.' default ""
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="91c8be08-7f8a-44a8-b516-98fc9c81d2b6" type="INPUTPARM:INPUT_PARM_ERROR">
 				<logger level="INFO" doc:name="Logger" doc:id="88816ea6-324b-4c5b-b5d5-2b73cb095d2b" />
 				<ee:transform doc:name="Transform Message" doc:id="5c5c996e-be93-4563-8525-e3245b7e8648" >
@@ -349,6 +366,7 @@ output application/json
 					</ee:message>
 				</ee:transform>
 			</on-error-propagate>
+			
 		</error-handler>
     </flow>
 </mule>
