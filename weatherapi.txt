@@ -1,0 +1,25 @@
+Weather-api-Rocket
+
+Implemetation Url : http://weather-api-rocket.us-e2.cloudhub.io/
+
+Login Credintals : 
+	Basic Auth: 
+	username : Rocket007
+	password : rocket777
+Api :
+
+	Resource
+		/weather
+	Query paramas
+		?ip
+		Api maps incoming Ip address to geo location, in turn makes use of longitiuted and latitued to obtain weather information. 
+
+
+		?zipCode
+		Api maps incoming Zipcode to geo location, in turn makes use of longitiuted and latitued to obtain weather information. 
+
+Postman collection included. 
+Api Raml File included. 
+Api deployed and managed by api manager in cloud. Has basic Auth policy configured. 
+	 
+C:\Users\sasse\AnypointStudio\studio-workspace\weather-api-rocket
